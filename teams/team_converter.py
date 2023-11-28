@@ -105,5 +105,4 @@ def export_to_packed(export_string):
     for pkmn in filter(None, team_members):
         pkmn_dict = single_pokemon_export_to_dict(pkmn)
         team_dict.append(pkmn_dict)
-
     return json_to_packed(team_dict)
