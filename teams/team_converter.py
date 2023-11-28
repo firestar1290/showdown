@@ -1,9 +1,11 @@
 from showdown.engine.helpers import normalize_name
 
+import logging
+logger = logging.getLogger(__name__)
 
 def json_to_packed(json_team):
     def from_json(j):
-        return "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{},{},{},{},{},{}".format(
+        return "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{},{},{},{},{},{},{},".format(
             j['name'],
             j.get('species', ""),
             j['item'],
@@ -21,6 +23,7 @@ def json_to_packed(json_team):
             j.get('gigantamax', ''),
             j.get('dynamaxlevel', ''),
             j.get('tera_type', ''),
+            j.get('fusion','')
         )
 
     packed_team_string = "]".join(
@@ -44,6 +47,7 @@ def single_pokemon_export_to_dict(pkmn_export_string):
         "gender": "",
         "item": "",
         "ability": "",
+        "fusion" : "",
         "moves": [],
         "nature": "",
         "evs": {
@@ -74,6 +78,8 @@ def single_pokemon_export_to_dict(pkmn_export_string):
     for line in map(str.strip, pkmn_info[1:]):
         if line.startswith('Ability: '):
             pkmn_dict["ability"] = normalize_name(line.split('Ability: ')[-1])
+        elif line.startswith('Fusion: '):
+            pkmn_dict["fusion"] = normalize_name(line.split('Fusion: ')[-1])
         elif line.startswith('Tera Type: '):
             pkmn_dict["tera_type"] = normalize_name(line.split('Tera Type: ')[-1])
         elif line.startswith('Level: '):
@@ -89,6 +95,7 @@ def single_pokemon_export_to_dict(pkmn_export_string):
             pkmn_dict["nature"] = normalize_name(line.split('Nature')[0])
         elif line.startswith('-'):
             pkmn_dict["moves"].append(normalize_name(line[1:]))
+    #logger.info("Pokemon Dictionary: {}".format(pkmn_dict))
     return pkmn_dict
 
 

@@ -107,6 +107,7 @@ class PSWebsocketClient:
             message = ["/utm None"]
         else:
             message = ["/utm {}".format(team)]
+            #logger.info("Setting team to {}".format(team))
         await self.send_message('', message)
 
     async def challenge_user(self, user_to_challenge, battle_format, team):

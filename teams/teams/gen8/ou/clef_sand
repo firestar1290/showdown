@@ -1,57 +1,63 @@
-Clefable @ Life Orb
-Ability: Magic Guard
-EVs: 76 HP / 252 SpA / 180 Spe
-Modest Nature
-IVs: 0 Atk
-- Moonblast
-- Thunderbolt
-- Flamethrower
-- Moonlight
+Garziken (Garchomp) @ Choice Band  
+Ability: Rough Skin  
+Fusion: Blaziken  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Flying Press  
+- Aqua Tail  
+- Dragon Claw  
+- Fire Punch  
 
-Corviknight @ Leftovers
-Ability: Pressure
-EVs: 252 HP / 4 Atk / 252 Spe
-Jolly Nature
-- Brave Bird
-- Substitute
-- Bulk Up
-- Roost
+Toxthorn (Toxapex) @ Rocky Helmet  
+Ability: Iron Barbs  
+Fusion: Ferrothorn 
+EVs: 248 HP / 132 Def / 128 SpD  
+Brave Nature  
+IVs: 0 Spe  
+- Grassy Terrain  
+- Baneful Bunker  
+- Needle Arm  
+- Gyro Ball  
 
-Hydreigon @ Leftovers
-Ability: Levitate
-EVs: 252 SpA / 4 SpD / 252 Spe
-Timid Nature
-IVs: 0 Atk
-- Dark Pulse
-- Flash Cannon
-- Nasty Plot
-- Substitute
+Sylvern (Sylveon) @ Assault Vest  
+Ability: Pixilate  
+Fusion: Noivern  
+Alt: a  
+EVs: 252 HP / 252 SpA / 4 SpD  
+Modest Nature  
+IVs: 0 Atk  
+- Dragon Pulse  
+- Boomburst  
+- Flamethrower  
+- Psychic  
 
-Rotom-Wash @ Choice Scarf
-Ability: Levitate
-EVs: 40 HP / 252 SpA / 216 Spe
-Timid Nature
-IVs: 0 Atk
-- Volt Switch
-- Hydro Pump
-- Trick
-- Will-O-Wisp
+Hawlgrowth (Hawlucha) @ Big Nugget  
+Ability: Unburden  
+Fusion: Tangrowth  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Adamant Nature  
+- Fling  
+- Trop Kick  
+- Flying Press  
+- Roost  
 
-Hippowdon @ Smooth Rock
-Ability: Sand Stream
-EVs: 252 HP / 4 Atk / 252 Def
-Impish Nature
-- Earthquake
-- Stealth Rock
-- Slack Off
-- Whirlwind
+Glisnape (Gliscor) @ Toxic Orb  
+Ability: Poison Heal  
+Fusion: Infernape  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Close Combat  
+- Earthquake  
+- Fake Out  
+- Protect  
 
-Excadrill @ Life Orb
-Ability: Sand Rush
-EVs: 252 Atk / 4 SpD / 252 Spe
-Jolly Nature
-- Earthquake
-- Rock Slide
-- Iron Head
-- Swords Dance
+Goomory (Goodra) @ Focus Sash  
+Ability: Gooey  
+Fusion: Skarmory  
+EVs: 248 HP / 8 Atk / 252 SpD  
+Careful Nature  
+- Stealth Rock  
+- Roost  
+- Defog  
+- Drill Peck  
 
