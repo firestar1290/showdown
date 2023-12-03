@@ -1,17 +1,21 @@
 from typing import Any
-import constants
 import math
+
+from sys import path
+
+path.append("")
 
 from data import pokedex
 from data import all_move_json as all_moves
 from data import all_items_json as all_items
-from engine.damage_calculator import pokemon_type_indicies
+from showdown.engine.damage_calculator import pokemon_type_indicies
+import constants
     
 def reverse_cantor(num: int):
-    w = math.floor(math.sqrt(num * 8 + 1) - 1 / 2) #w and t are intermediary values
+    w = math.floor((math.sqrt(num * 8 + 1) - 1) / 2) #w and t are intermediary values
     t = int(((w + 1) * w) / 2)
-    x = num - t
-    y = w - x
+    y = num - t
+    x = w - y
     return (x,y)    
 
 class Fusion():    
@@ -29,7 +33,8 @@ class Fusion():
         self.id = 0
         self.body = None
         self.head = None
-        self.ability = ''
+        self.potential_abilities = []
+        self.ability = -1
         self.item = None
         self.stats = {
             constants.HITPOINTS : 0,
@@ -51,10 +56,12 @@ class Fusion():
         
     def update_info(self): #also updates typing
         if (self.body is None or self.head is None):
-            if (self.id != 0):
-                self.set_fusion(self.id)
-            else:
+            if (self.id == 0):
                 raise ValueError("Set Fusion ID or Head and Body before updating info")
+            else:
+                self.set_fusion(self.id)
+        self.types = []
+        self.update_id()
         #not deleted for archiving purposes
         self.stats[constants.HITPOINTS] = math.floor((self.body['baseStats'][constants.HITPOINTS] / 3) + 2 * (self.head['baseStats'][constants.HITPOINTS] / 3))
         self.stats[constants.ATTACK] = math.floor((2 * (self.body['baseStats'][constants.ATTACK] / 3)) + (self.head['baseStats'][constants.ATTACK]/3))
@@ -62,14 +69,20 @@ class Fusion():
         self.stats[constants.DEFENSE] = math.floor((2 * (self.body['baseStats'][constants.DEFENSE] / 3)) + (self.head['baseStats'][constants.DEFENSE]/3))
         self.stats[constants.SPECIAL_DEFENSE] = math.floor((self.body['baseStats'][constants.SPECIAL_DEFENSE] / 3) + 2 * (self.head['baseStats'][constants.SPECIAL_DEFENSE] / 3))
         self.stats[constants.SPEED] = math.floor((2 * (self.body['baseStats'][constants.SPEED] / 3) )+ (self.head['baseStats'][constants.SPEED]/3))
-        self.types[0] = self.head["types"][0]
+        self.types.append(self.head["types"][0])
         if len(self.body["types"]) == 1:
             if not (self.body["types"][0] is self.head["types"][0]):
-                self.types[1] = self.body["types"][0]
+                self.types.append(self.body["types"][0])
             else:
-                self.types[1] = "typeless" #Ho-Oh/Entei is fire type
+                self.types.append("typeless") #Ho-Oh/Entei is fire type
         else:
-            self.types[1] = self.body["types"][1]
+            self.types.append(self.body["types"][1])
+        self.types.append('typeless')
+        self.types.append('typeless')
+        for ability_key in self.head["abilities"]:
+            self.potential_abilities.append(self.head["abilities"][ability_key])
+        for ability_key in self.body["abilities"]:
+            self.potential_abilities.append(self.body["abilities"][ability_key])
         
     def set_head(self,newHead : str):
         self.head = pokedex[newHead]
@@ -89,19 +102,20 @@ class Fusion():
                 self.non_volatile_status = non_vol
 
     def as_input(self): #if id not set, set with Cantor pairing function
-        output = [pokemon_type_indicies[self.types[0]],]
-        for type in self.types[1]:
+        output = [self.id,]
+        for type in self.types:
             output.append(pokemon_type_indicies[type])
         for idx in self.moves:
-            if self.moves[idx] is '':
+            if self.moves[idx] == '':
                 output.append(0)
             else:
                 counter = 1
                 for move in all_moves:
-                    if move["name"] is self.moves[idx]:
+                    if all_moves[move]["name"] is self.moves[idx]:
                         output.append(counter)
                         break
                     counter += 1
+        output.append(self.ability + 1)
         if self.item is None:
             output.append(0)
         else:
@@ -113,12 +127,18 @@ class Fusion():
         self.id = newId
         head_num, body_num = reverse_cantor(newId)
         for pokemon in pokedex:
-            if pokemon["num"] == body_num:
-                self.body = pokemon
-            if pokemon["num"] == head_num:
-                self.head = pokemon
+            if pokedex[pokemon]["num"] == body_num:
+                self.body = pokedex[pokemon]
+            if pokedex[pokemon]["num"] == head_num:
+                self.head = pokedex[pokemon]
             if not (self.body is None or self.head is None) and self.head["num"] == head_num and self.body["num"] == body_num:
                 break
+            
+    def update_id(self):
+        if not(self.head is None or self.body is None):
+            self.id = int(0.5 * (self.head["num"] + self.body["num"]) * (self.head["num"] + self.body["num"] + 1) + self.body["num"])
+        else:
+            self.id = 0
     
 
 class Triple_Fusion(Fusion):
@@ -129,25 +149,17 @@ class Triple_Fusion(Fusion):
     def set_fusion(self, newId):
         main_fusion_num, mid_num = reverse_cantor(newId)
         for pokemon in pokedex:
-            if pokemon["num"] == mid_num:
+            if pokedex[pokemon]["num"] == mid_num:
                 self.mid = pokemon
                 break
         super().set_fusion(main_fusion_num)
         self.id = newId
     
-    def as_input(self):
-        if (self.body is None or self.head is None or self.mid is None):
-            return 0
-        if self.id == 0:
-            fusion_id = (0.5 * (self.head["num"] + self.body["num"]) * (self.head["num"] + self.body["num"] + 1) + self.body["num"])
-            self.id = (0.5 * (fusion_id + self.mid["num"]) * (fusion_id + self.mid["num"] + 1) + self.mid["num"])
-        return self.id
-    
     def update_info(self):
         if self.id == 0:
             raise ValueError("Triple Fusion ID not set, please set ID before updaing info")
         elif self.id == 97322323090: #Celemewchi
-            self.types = ["psychic","steel","grass"]
+            self.types = ["psychic","steel","grass","typeless"]
             self.stats[constants.HITPOINTS] = 100
             self.stats[constants.ATTACK] = 100
             self.stats[constants.DEFENSE] = 100
@@ -155,7 +167,7 @@ class Triple_Fusion(Fusion):
             self.stats[constants.SPECIAL_DEFENSE] = 100
             self.stats[constants.SPEED] = 100
         elif self.id == 40940196257: #Regitrio
-            self.types = ["ice","rock","steel"]
+            self.types = ["ice","rock","steel","typeless"]
             self.stats[constants.HITPOINTS] = 80
             self.stats[constants.ATTACK] = 100
             self.stats[constants.DEFENSE] = 200
@@ -171,7 +183,7 @@ class Triple_Fusion(Fusion):
             self.stats[constants.SPECIAL_DEFENSE] = 125
             self.stats[constants.SPEED] = 100
         else:
-            self.types = ["fire","water","grass"]
+            self.types = ["fire","water","grass","typeless"]
             if self.id == 8826753668: #Swamptiliken
                 self.stats[constants.HITPOINTS] = 100
                 self.stats[constants.ATTACK] = 120
