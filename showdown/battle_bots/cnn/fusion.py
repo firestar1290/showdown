@@ -85,10 +85,18 @@ class Fusion():
             self.potential_abilities.append(self.body["abilities"][ability_key])
         
     def set_head(self,newHead : str):
-        self.head = pokedex[newHead]
+        try:
+            self.head = pokedex[newHead]
+        except KeyError:
+            if newHead == "porygon-z":
+                self.head = pokedex["porygonz"]
 
     def set_body(self,newBody : str):
-        self.body = pokedex[newBody]
+        try:
+            self.body = pokedex[newBody]
+        except KeyError:
+            if newBody == "porygon-z":
+                self.body = pokedex["porygonz"]
     
     def set_item(self,item_name):
         for item in all_items:
@@ -111,7 +119,7 @@ class Fusion():
             else:
                 counter = 1
                 for move in all_moves:
-                    if all_moves[move]["name"] is self.moves[idx]:
+                    if move == self.moves[idx]:
                         output.append(counter)
                         break
                     counter += 1

@@ -42,8 +42,8 @@ def format_curr_replay(file_name):
     }
     print("Formatting: " + file_name)
     file_contents = ""
-    output1 = ""
-    output2 = ""
+    output1 = ''
+    output2 = ''
     player_actions = [0,0] #0 = forfeit, 1 = move1, 2 = move2, 3 = move3, 4 = move4, 5 = switch1, 6 = switch2, 7 = switch3, 8 = switch4, 9 = switch5, 10 = switch6
     player_teams=[[],[]]
     line_counter = 0
@@ -69,6 +69,7 @@ def format_curr_replay(file_name):
                     temp_triple.set_fusion(TRIPLE_FUSIONS[line[9:line.find("|item")]])
                     temp_triple.update_info()
                     player_teams[int(line[7])-1].append(temp_triple)
+                    temp_fusion = Fusion()
                 else:
                     temp_fusion.set_head(newHead=line[9:line.find(", ")].lower())
                     if line.find("alt") == -1:
@@ -77,6 +78,7 @@ def format_curr_replay(file_name):
                         temp_fusion.set_body(newBody=line[line.find("fusion: ")+8:line.find(",",line.find("fusion: "))].lower())
                     temp_fusion.update_info()
                     player_teams[int(line[7])-1].append(temp_fusion)
+                    temp_fusion = Fusion()
             elif line[1:7] == "switch":
                 player = int(line[9])-1
                 player_marker_idx = line.find("p" + str(player+1) + "a: ")
@@ -96,13 +98,13 @@ def format_curr_replay(file_name):
                         player_actions[player] = counter + 4
                         break
             elif line[:-1] == "|turn|":
-                output1 = format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)
-                output2 = format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)
+                output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n"
+                output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n"
                 turn_num += 1
             elif line[:6] == "|move|":
                 player = int(line[7])-1
                 player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                move_name = line[line.find("|",player_marker_idx):line.find("|p",player_marker_idx)]
+                move_name = line[line.find("|",player_marker_idx)+1:line.find("|p",player_marker_idx)].lower()
                 counter = 0
                 for move_slot_num in player_teams[player][curr_active[player]].moves:
                     player_actions[player] = counter + 1
@@ -113,6 +115,8 @@ def format_curr_replay(file_name):
                         break
                     counter += 1
             elif line.find("|win|") > -1:
+                output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n"
+                output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n"
                 break
             elif line[:10] == "|-damage|" or line.find("heal") > -1:
                 player = int(line[line.find("p")+1]) - 1
@@ -121,7 +125,7 @@ def format_curr_replay(file_name):
                 player = int(line[line.find("p")+1]) - 1
                 player_teams[player][curr_active[player]].item = None
             elif line.find("status") > -1:
-                player = int(line[line.find("p") + 1])
+                player = int(line[line.find("p") + 1]) - 1
                 player_marker_idx = line.find("p" + str(player+1) + "a: ")
                 player_teams[player][curr_active[player]].set_status(line[line.find("|",player_marker_idx)+1:line.find("|",player_marker_idx)+4])
             if line.find("ability") > -1:
@@ -140,7 +144,7 @@ def format_curr_replay(file_name):
     if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt"):
         print("Writing to: showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt")
         file_output = open("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt",'w')
-        file_output.write(str(output1) + "\n" + str(output2))
+        file_output.write(output1 + "\n" + output2)
     else:
         print("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt already exists")
 
