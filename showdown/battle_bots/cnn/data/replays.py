@@ -12,21 +12,21 @@ from showdown.engine.objects import Pokemon
 
 #from engine.damage_calculator import pokemon_type_indicies
 
-def format_input(p1_team : list[Fusion], p2_team : list[Fusion], turn_num : int, p1_active : int, p2_active : int):
-    output = (turn_num,)
+def format_input(p1_team : list[Fusion], p2_team : list[Fusion], turn_num : int, p1_active : int, p2_active : int, p1_action : int):
+    output = str(turn_num) + ","
     for pokemon in p1_team:
         output += pokemon.as_input()
-    output += (p1_active,)
+    output += str(p1_active) + ","
     for pokemon in p2_team:
         output += pokemon.as_input()
-    output += (p2_active,)
+    output += str(p2_active) + "," + str(p1_action)
     return output
 
 def determine_winner(battle_log: str): #the entire battle log
     if battle_log.find("losing") < battle_log.find("winning"):
-        return 2 - 1
+        return 2
     else:
-        return 1 - 1
+        return 1
 
 def format_curr_replay(file_name):
     COUNTER_OFFSET = 11 + 17
@@ -50,9 +50,9 @@ def format_curr_replay(file_name):
     }
     print("Formatting: " + file_name)
     file_contents = ""
-    output1 = ''
-    output2 = ''
-    player_actions = [0,0] #0 = forfeit, 1 = move1, 2 = move2, 3 = move3, 4 = move4, 5 = switch1, 6 = switch2, 7 = switch3, 8 = switch4, 9 = switch5, 10 = switch6
+    output_train = ''
+    output_test = ''
+    player_actions = {"p1_action" : -1, "p2_action" : -1} #0 = forfeit, 1 = move1, 2 = move2, 3 = move3, 4 = move4, 5 = switch1, 6 = switch2, 7 = switch3, 8 = switch4, 9 = switch5, 10 = switch6
     player_teams=[[],[]]
     line_counter = 0
     temp_fusion = Fusion()
@@ -122,12 +122,12 @@ def format_curr_replay(file_name):
                 for pokemon in player_teams[player]:
                     if pokemon.id == temp_fusion.id:
                         curr_active[player] = counter
-                        player_actions[player] = counter + 4 + 1 #I have no idea why this +1 is necessary, but it is
+                        player_actions["p" + str(player+1) + "_action"] = counter + 4 + 1 #I have no idea why this +1 is necessary, but it is
                         break
                     counter += 1
             elif line[:6] == "|turn|":
-                output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n"
-                output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n"
+                output_train += format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1], player_actions["p1_action"]) + "\n"
+                output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n"
                 turn_num += 1
             elif line[:6] == "|move|":
                 if line.find("[from]") == -1:
@@ -136,7 +136,7 @@ def format_curr_replay(file_name):
                     move_name = line[line.find("|",player_marker_idx)+1:line.find("|p",player_marker_idx)]
                     counter = 0
                     for move_slot_num in player_teams[player][curr_active[player]].moves:
-                        player_actions[player] = counter + 1
+                        player_actions["p" + str(player+1) + "_action"] = counter + 1
                         if player_teams[player][curr_active[player]].moves[move_slot_num] == '':
                             player_teams[player][curr_active[player]].moves[move_slot_num] = move_name
                             break
@@ -144,9 +144,8 @@ def format_curr_replay(file_name):
                             break
                         counter += 1
             elif line.find("|win|") > -1:
-                output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n" + str(determine_winner(file_contents)) + "\n"
-                output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n" + str(determine_winner(file_contents)) + "\n"
-                
+                output_train += format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1], player_actions["p1_action"]) + "\n" + str(determine_winner(file_contents)) + "\n"
+                output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n" + str(((determine_winner(file_contents))%2) + 1) + "\n"
                 break
             elif line.find("|-damage|") > -1 or line.find("heal") > -1:
                 try:
@@ -187,12 +186,28 @@ def format_curr_replay(file_name):
                 item_name = line[line.find("item: ") + 6:]
                 player_teams[player][curr_active[player]].set_item(item_name)
                 
-    if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt"):
-        print("Writing to: showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt")
-        file_output = open("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt",'w')
-        file_output.write(output1 + "\n" + output2)
+    if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv"):
+        print("Writing to: showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv")
+        file_output_train = open("showdown/battle_bots/cnn/data/formatted_replays/train/" + file_name + ".csv",'w')
+        file_output_test = open("showdown/battle_bots/cnn/data/formatted_replays/test/" + file_name + ".csv",'w')
+        file_output_train.write("turn_num,")
+        file_output_test.write("turn_num,")
+        for i in range(len(player_teams[0])):
+            for poke_info in Fusion.input_key():
+                file_output_train.write("p1_poke" + str(i) + "_" + poke_info + ",")
+                file_output_test.write("p1_poke" + str(i) + "_" + poke_info + ",")
+        file_output_train.write("p1_curr_active,")
+        file_output_test.write("p1_curr_active,")
+        for i in range(len(player_teams[1])):
+            for poke_info in Fusion.input_key():
+                file_output_train.write("p2_poke" + str(i) + "_" + poke_info + ",")
+                file_output_test.write("p2_poke" + str(i) + "_" + poke_info + ",")
+        file_output_train.write("p2_curr_active,decision\n")
+        file_output_test.write("p2_curr_active,decision\n")
+        file_output_train.write(output_train)
+        file_output_test.write(output_test)
     else:
-        print("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt already exists")
+        print("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv already exists")
 
 if __name__ == "__main__":
     ctx = ssl.create_default_context()
@@ -204,7 +219,7 @@ if __name__ == "__main__":
         reader = csv.reader(replay_list,delimiter=",")
         for line in reader:
             if line[6] == "[Gen 7] IF Dex OU":
-                if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + line[7] + ".txt"):
+                if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + line[7] + ".csv"):
                     request = req.urlopen(base_url + line[7] + ".html?" + str(int(datetime.now(tz=timezone.utc).timestamp() * 1000))[7:],context=ctx)
                     site_contents = str(request.read())
                     site_contents = site_contents.replace("\\n","\n")

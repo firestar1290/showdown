@@ -147,27 +147,53 @@ class Fusion():
                 self.non_volatile_status = non_vol
 
     def as_input(self): #if id not set, set with Cantor pairing function
-        output = [self.id,]
+        output = str(self.id) + ","
         for type in self.types:
-            output.append(pokemon_type_indicies[type])
+            output += str(pokemon_type_indicies[type]) + ","
+        for stat_name in self.stats:
+            output += str(self.stats[stat_name]) + ","
         for idx in self.moves:
             if self.moves[idx] == '':
-                output.append(0)
+                output += "0,"
             else:
                 counter = 1
                 for move in all_moves:
                     if all_moves[move]["name"] == self.moves[idx]:
-                        output.append(counter)
+                        output += str(counter) + ","
                         break
                     counter += 1
-        output.append(self.ability + 1)
-        output.append(self.hpPercent)
+        output += str(self.ability + 1) + ","
+        output += str(self.hpPercent) + ","
         if self.item is None:
-            output.append(0)
+            output += "0,"
         else:
-            output.append(all_items[self.item]["num"])
-        output.append(Fusion.non_volatie_to_num[self.non_volatile_status])
-        return tuple(output)
+            output += str(all_items[self.item]["num"]) + ","
+        output += str(Fusion.non_volatie_to_num[self.non_volatile_status]) + ","
+        return output
+
+    @staticmethod
+    def input_key():
+        return [
+                "id",
+                "type1",
+                "type2",
+                "type3",
+                "type4",
+                constants.HITPOINTS,
+                constants.ATTACK,
+                constants.SPECIAL_ATTACK,
+                constants.DEFENSE,
+                constants.SPECIAL_DEFENSE,
+                constants.SPEED,
+                "move1",
+                "move2",
+                "move3",
+                "move4",
+                "ability",
+                "hpPercent",
+                "item",
+                "status"
+            ]
     
     def set_fusion(self,newId):
         self.id = newId
