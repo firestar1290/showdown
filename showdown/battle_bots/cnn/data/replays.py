@@ -14,11 +14,21 @@ from showdown.engine.objects import Pokemon
 
 def format_input(p1_team : list[Fusion], p2_team : list[Fusion], turn_num : int, p1_active : int, p2_active : int, p1_action : int):
     output = str(turn_num) + ","
+    counter = 0
     for pokemon in p1_team:
         output += pokemon.as_input()
+        counter += 1
+    for i in range(6-counter):
+        temp = Fusion()
+        output += temp.as_input()
     output += str(p1_active) + ","
+    counter = 0
     for pokemon in p2_team:
         output += pokemon.as_input()
+        counter += 1
+    for i in range(6-counter):
+        temp = Fusion()
+        output += temp.as_input()
     output += str(p2_active) + "," + str(p1_action)
     return output
 
@@ -192,13 +202,13 @@ def format_curr_replay(file_name):
         file_output_test = open("showdown/battle_bots/cnn/data/formatted_replays/test/" + file_name + ".csv",'w')
         file_output_train.write("turn_num,")
         file_output_test.write("turn_num,")
-        for i in range(len(player_teams[0])):
+        for i in range(6):
             for poke_info in Fusion.input_key():
                 file_output_train.write("p1_poke" + str(i) + "_" + poke_info + ",")
                 file_output_test.write("p1_poke" + str(i) + "_" + poke_info + ",")
         file_output_train.write("p1_curr_active,")
         file_output_test.write("p1_curr_active,")
-        for i in range(len(player_teams[1])):
+        for i in range(6):
             for poke_info in Fusion.input_key():
                 file_output_train.write("p2_poke" + str(i) + "_" + poke_info + ",")
                 file_output_test.write("p2_poke" + str(i) + "_" + poke_info + ",")
