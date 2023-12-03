@@ -155,7 +155,7 @@ def format_curr_replay(file_name):
                         counter += 1
             elif line.find("|win|") > -1:
                 output_train += format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1], player_actions["p1_action"]) + "\n" + str(determine_winner(file_contents)) + "\n"
-                output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n" + str(((determine_winner(file_contents))%2) + 1) + "\n"
+                output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n" +  + "\n"
                 break
             elif line.find("|-damage|") > -1 or line.find("heal") > -1:
                 try:
@@ -200,6 +200,8 @@ def format_curr_replay(file_name):
         print("Writing to: showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv")
         file_output_train = open("showdown/battle_bots/cnn/data/formatted_replays/train/" + file_name + ".csv",'w')
         file_output_test = open("showdown/battle_bots/cnn/data/formatted_replays/test/" + file_name + ".csv",'w')
+        file_output_winners_train = open("showdown/battle_bots/cnn/data/formatted_replays/train/winners.txt",'a')
+        file_output_winners_test = open("showdown/battle_bots/cnn/data/formatted_replays/test/winners.txt",'a')
         file_output_train.write("turn_num,")
         file_output_test.write("turn_num,")
         for i in range(6):
@@ -216,6 +218,8 @@ def format_curr_replay(file_name):
         file_output_test.write("p2_curr_active,decision\n")
         file_output_train.write(output_train)
         file_output_test.write(output_test)
+        file_output_winners_train.write(file_name + " : " + str(determine_winner(file_contents)) + "\n")
+        file_output_winners_test.write(file_name + " : " + str((determine_winner(file_contents)%2)+1) + "\n")
     else:
         print("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv already exists")
 
