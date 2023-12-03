@@ -5,9 +5,10 @@ from datetime import datetime, timezone
 import ssl
 from sys import path
 
-path.append("showdown\\battle_bots\\cnn")
+path.append("")
 
-from fusion import Fusion, Triple_Fusion
+from showdown.battle_bots.cnn.fusion import Fusion, Triple_Fusion
+from showdown.engine.objects import Pokemon
 
 #from engine.damage_calculator import pokemon_type_indicies
 
@@ -21,9 +22,16 @@ def format_input(p1_team : list[Fusion], p2_team : list[Fusion], turn_num : int,
     output += (p2_active,)
     return output
 
+def determine_winner(battle_log: str): #the entire battle log
+    if battle_log.find("losing") < battle_log.find("winning"):
+        return 2 - 1
+    else:
+        return 1 - 1
+
 def format_curr_replay(file_name):
-    COUNTER_OFFSET = 11 + 19
+    COUNTER_OFFSET = 11 + 17
     TRIPLE_FUSIONS = { #These pokemon has 3 or 4 types, notably Zapmolticuno, who instanly dies to Stealth Rocks
+        "Enraicune" : 7118213831,
         "Celemewchi" : 	97322323090, #Psychich, Steel, Grass
         "Regitrio" : 40940196257, #Ice, Rock, Steel
         "Swamptiliken" : 8826753668, #Fire, Water, Grass
@@ -64,82 +72,120 @@ def format_curr_replay(file_name):
         
         for line in file_contents.splitlines():
             if line[:6] == "|poke|":
-                if line[9:line.find("|item")] in TRIPLE_FUSIONS:
+                if line[9:line.find("|item")] in TRIPLE_FUSIONS or line[9:line.find(",")] in TRIPLE_FUSIONS:
                     temp_triple = Triple_Fusion()
-                    temp_triple.set_fusion(TRIPLE_FUSIONS[line[9:line.find("|item")]])
+                    if line.find(",") == -1:
+                        temp_triple.set_fusion(TRIPLE_FUSIONS[line[9:line.find("|item")]])
+                    else:
+                        temp_triple.set_fusion(TRIPLE_FUSIONS[line[9:line.find(",")]])
                     temp_triple.update_info()
                     player_teams[int(line[7])-1].append(temp_triple)
                     temp_fusion = Fusion()
-                else:
+                elif line.find("fusion: ") > -1:
                     temp_fusion.set_head(newHead=line[9:line.find(", ")].lower())
                     if line.find("alt") == -1:
+                        if (line[line.find("fusion: ")+8:line.find("|",line.find("fusion: "))] in TRIPLE_FUSIONS):
+                            print("Triple fusion used as body")
+                            return
                         temp_fusion.set_body(newBody=line[line.find("fusion: ")+8:line.find("|",line.find("fusion: "))].lower())
                     else:
                         temp_fusion.set_body(newBody=line[line.find("fusion: ")+8:line.find(",",line.find("fusion: "))].lower())
                     temp_fusion.update_info()
                     player_teams[int(line[7])-1].append(temp_fusion)
                     temp_fusion = Fusion()
+                else: #for cowards
+                    temp_fusion.set_head(newHead=line[line.find("|",line.find("p"))+4:line.find(",")].lower())
+                    temp_fusion.update_info()
+                    player_teams[int(line[7])-1].append(temp_fusion)
+                    temp_fusion = Fusion()
             elif line[1:7] == "switch":
                 player = int(line[9])-1
                 player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                temp_head = line[line.find("|",player_marker_idx)+1:line.find(",",player_marker_idx)]
-                if line.find("alt") == -1:
-                    temp_body = line[line.find("fusion: ")+8:line.find("|",line.find("fusion: "))]
+                if line.find(",",player_marker_idx) > -1:
+                    temp_head = line[line.find("|",player_marker_idx)+1:line.find(",",player_marker_idx)]
                 else:
-                    temp_body = line[line.find("fusion: ")+8:line.find(",",line.find("fusion: "))]
-                temp_fusion = Fusion()
-                temp_fusion.set_body(temp_body.lower())
-                temp_fusion.set_head(temp_head.lower())
-                temp_fusion.update_info()
+                    temp_head = line[line.find("|",player_marker_idx)+1:line.find("|",line.find("|",player_marker_idx)+1)]
+                if temp_head in TRIPLE_FUSIONS:
+                    temp_fusion = Triple_Fusion()
+                    temp_fusion.set_fusion(TRIPLE_FUSIONS[temp_head])
+                    temp_fusion.update_info()
+                else:
+                    if line.find("alt") == -1:
+                        temp_body = line[line.find("fusion: ")+8:line.find("|",line.find("fusion: "))]
+                    else:
+                        temp_body = line[line.find("fusion: ")+8:line.find(",",line.find("fusion: "))]
+                    temp_fusion = Fusion()
+                    temp_fusion.set_body(temp_body.lower())
+                    temp_fusion.set_head(temp_head.lower())
+                    temp_fusion.update_info()
                 counter = 0
                 for pokemon in player_teams[player]:
                     if pokemon.id == temp_fusion.id:
                         curr_active[player] = counter
-                        player_actions[player] = counter + 4
+                        player_actions[player] = counter + 4 + 1 #I have no idea why this +1 is necessary, but it is
                         break
-            elif line[:-1] == "|turn|":
+                    counter += 1
+            elif line[:6] == "|turn|":
                 output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n"
                 output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n"
                 turn_num += 1
             elif line[:6] == "|move|":
-                player = int(line[7])-1
-                player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                move_name = line[line.find("|",player_marker_idx)+1:line.find("|p",player_marker_idx)].lower()
-                counter = 0
-                for move_slot_num in player_teams[player][curr_active[player]].moves:
-                    player_actions[player] = counter + 1
-                    if player_teams[player][curr_active[player]].moves[move_slot_num] == '':
-                        player_teams[player][curr_active[player]].moves[move_slot_num] = move_name
-                        break
-                    elif player_teams[player][curr_active[player]].moves[move_slot_num] == move_name:
-                        break
-                    counter += 1
+                if line.find("[from]") == -1:
+                    player = int(line[7])-1
+                    player_marker_idx = line.find("p" + str(player+1) + "a: ")
+                    move_name = line[line.find("|",player_marker_idx)+1:line.find("|p",player_marker_idx)]
+                    counter = 0
+                    for move_slot_num in player_teams[player][curr_active[player]].moves:
+                        player_actions[player] = counter + 1
+                        if player_teams[player][curr_active[player]].moves[move_slot_num] == '':
+                            player_teams[player][curr_active[player]].moves[move_slot_num] = move_name
+                            break
+                        elif player_teams[player][curr_active[player]].moves[move_slot_num] == move_name:
+                            break
+                        counter += 1
             elif line.find("|win|") > -1:
-                output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n"
-                output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n"
+                output1 += str(format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1]) + (player_actions[0],)) + "\n" + str(determine_winner(file_contents)) + "\n"
+                output2 += str(format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0]) + (player_actions[1],)) + "\n" + str(determine_winner(file_contents)) + "\n"
+                
                 break
-            elif line[:10] == "|-damage|" or line.find("heal") > -1:
-                player = int(line[line.find("p")+1]) - 1
-                player_teams[player][curr_active[player]].hpPercent = int(line[line.find("|",line.find("p"))+1:line.find("\\\\")])
+            elif line.find("|-damage|") > -1 or line.find("heal") > -1:
+                try:
+                    player = int(line[line.find("p")+1]) - 1
+                    try:
+                        player_teams[player][curr_active[player]].hpPercent = int(line[line.find("|",line.find("p"))+1:line.find("\\\\")])
+                    except ValueError: #death
+                        player_teams[player][curr_active[player]].hpPercent = 0
+                except ValueError:
+                    pass
             elif line.find("enditem") > -1:
                 player = int(line[line.find("p")+1]) - 1
                 player_teams[player][curr_active[player]].item = None
             elif line.find("status") > -1:
-                player = int(line[line.find("p") + 1]) - 1
-                player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                player_teams[player][curr_active[player]].set_status(line[line.find("|",player_marker_idx)+1:line.find("|",player_marker_idx)+4])
-            if line.find("ability") > -1:
-                player = int(line[line.find("p")+1]) - 1
-                if line[line.find("ability")-1] == "-":
+                try:
+                    player = int(line[line.find("p") + 1]) - 1
                     player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                    new_ability = line[line.find("|",player_marker_idx)+1:line.find("|",line.find("|",player_marker_idx)+1)]
-                else:
-                    new_ability = line[line.find(" ",line.find("ability:"))+1:]
-                counter = 0
-                for poss_ability in player_teams[player][curr_active[player]].potential_abilities:
-                    if poss_ability == new_ability:
-                        player_teams[player][curr_active[player]].ability = counter
-                    counter += 1
+                    player_teams[player][curr_active[player]].set_status(line[line.find("|",player_marker_idx)+1:line.find("|",player_marker_idx)+4])
+                except ValueError:
+                    pass
+            if line.find("ability") > -1:
+                try:
+                    player = int(line[line.find("p")+1]) - 1
+                    if line[line.find("ability")-1] == "-":
+                        player_marker_idx = line.find("p" + str(player+1) + "a: ")
+                        new_ability = line[line.find("|",player_marker_idx)+1:line.find("|",line.find("|",player_marker_idx)+1)]
+                    else:
+                        new_ability = line[line.find(" ",line.find("ability:"))+1:]
+                    counter = 0
+                    for poss_ability in player_teams[player][curr_active[player]].potential_abilities:
+                        if poss_ability == new_ability:
+                            player_teams[player][curr_active[player]].ability = counter
+                        counter += 1
+                except ValueError:
+                    pass
+            elif line.find("item:") > -1:
+                player = int(line[line.find("p")+1]) - 1
+                item_name = line[line.find("item: ") + 6:]
+                player_teams[player][curr_active[player]].set_item(item_name)
                 
     if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt"):
         print("Writing to: showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".txt")

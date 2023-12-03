@@ -55,34 +55,43 @@ class Fusion():
         self.non_volatile_status = ''
         
     def update_info(self): #also updates typing
-        if (self.body is None or self.head is None):
-            if (self.id == 0):
-                raise ValueError("Set Fusion ID or Head and Body before updating info")
-            else:
-                self.set_fusion(self.id)
+        if (self.head is None):
+            raise ValueError("Set Fusion ID or Head and Body before updating info")
         self.types = []
         self.update_id()
-        #not deleted for archiving purposes
-        self.stats[constants.HITPOINTS] = math.floor((self.body['baseStats'][constants.HITPOINTS] / 3) + 2 * (self.head['baseStats'][constants.HITPOINTS] / 3))
-        self.stats[constants.ATTACK] = math.floor((2 * (self.body['baseStats'][constants.ATTACK] / 3)) + (self.head['baseStats'][constants.ATTACK]/3))
-        self.stats[constants.SPECIAL_ATTACK] = math.floor((self.body['baseStats'][constants.SPECIAL_ATTACK] / 3) + 2 * (self.head['baseStats'][constants.SPECIAL_ATTACK] / 3))
-        self.stats[constants.DEFENSE] = math.floor((2 * (self.body['baseStats'][constants.DEFENSE] / 3)) + (self.head['baseStats'][constants.DEFENSE]/3))
-        self.stats[constants.SPECIAL_DEFENSE] = math.floor((self.body['baseStats'][constants.SPECIAL_DEFENSE] / 3) + 2 * (self.head['baseStats'][constants.SPECIAL_DEFENSE] / 3))
-        self.stats[constants.SPEED] = math.floor((2 * (self.body['baseStats'][constants.SPEED] / 3) )+ (self.head['baseStats'][constants.SPEED]/3))
-        self.types.append(self.head["types"][0])
-        if len(self.body["types"]) == 1:
-            if not (self.body["types"][0] is self.head["types"][0]):
-                self.types.append(self.body["types"][0])
+        if not (self.body is None):
+            self.stats[constants.HITPOINTS] = math.floor((self.body['baseStats'][constants.HITPOINTS] / 3) + 2 * (self.head['baseStats'][constants.HITPOINTS] / 3))
+            self.stats[constants.ATTACK] = math.floor((2 * (self.body['baseStats'][constants.ATTACK] / 3)) + (self.head['baseStats'][constants.ATTACK]/3))
+            self.stats[constants.SPECIAL_ATTACK] = math.floor((self.body['baseStats'][constants.SPECIAL_ATTACK] / 3) + 2 * (self.head['baseStats'][constants.SPECIAL_ATTACK] / 3))
+            self.stats[constants.DEFENSE] = math.floor((2 * (self.body['baseStats'][constants.DEFENSE] / 3)) + (self.head['baseStats'][constants.DEFENSE]/3))
+            self.stats[constants.SPECIAL_DEFENSE] = math.floor((self.body['baseStats'][constants.SPECIAL_DEFENSE] / 3) + 2 * (self.head['baseStats'][constants.SPECIAL_DEFENSE] / 3))
+            self.stats[constants.SPEED] = math.floor((2 * (self.body['baseStats'][constants.SPEED] / 3) )+ (self.head['baseStats'][constants.SPEED]/3))
+            self.types.append(self.head["types"][0])
+            if len(self.body["types"]) == 1:
+                if not (self.body["types"][0] is self.head["types"][0]):
+                    self.types.append(self.body["types"][0])
+                else:
+                    self.types.append("typeless") #Ho-Oh/Entei is fire type
             else:
-                self.types.append("typeless") #Ho-Oh/Entei is fire type
+                self.types.append(self.body["types"][1])
+            self.types.append('typeless')
+            self.types.append('typeless')
+            for ability_key in self.head["abilities"]:
+                self.potential_abilities.append(self.head["abilities"][ability_key])
+            for ability_key in self.body["abilities"]:
+                self.potential_abilities.append(self.body["abilities"][ability_key])
         else:
-            self.types.append(self.body["types"][1])
-        self.types.append('typeless')
-        self.types.append('typeless')
-        for ability_key in self.head["abilities"]:
-            self.potential_abilities.append(self.head["abilities"][ability_key])
-        for ability_key in self.body["abilities"]:
-            self.potential_abilities.append(self.body["abilities"][ability_key])
+            self.stats = self.head["baseStats"]
+            self.types.append(self.head["types"][0])
+            try:
+                self.types.append(self.head["types"][1])
+            except IndexError:
+                self.types.append("typeless")
+            self.types.append("typeless")
+            self.types.append("typeless")
+            for ability_key in self.head["abilities"]:
+                self.potential_abilities.append(self.head["abilities"][ability_key])
+            
         
     def set_head(self,newHead : str):
         try:
@@ -90,6 +99,25 @@ class Fusion():
         except KeyError:
             if newHead == "porygon-z":
                 self.head = pokedex["porygonz"]
+            elif newHead[:8] == "oricorio":
+                if newHead[9] == 'p':
+                    if newHead[10] == 'o':
+                        self.head = pokedex["oricoriopompom"]
+                    else:
+                        self.head = pokedex["oricoriopau"]
+                elif newHead[9] == 's':
+                    self.head = pokedex["oricoriosensu"]
+                else:
+                    self.head = pokedex["oricorio"]
+            elif newHead[:8] == "lycanroc":
+                if newHead[9:] == "midnight":
+                    self.head = pokedex["lycanrocmidnight"]
+                elif newHead[9:] == "dusk":
+                    self.head = pokedex["lycanrocdusk"]
+                else:
+                    self.head = pokedex["lycanroc"]
+            elif newHead == "mr. mime":
+                self.head = pokedex["mrmime"]
 
     def set_body(self,newBody : str):
         try:
@@ -97,10 +125,19 @@ class Fusion():
         except KeyError:
             if newBody == "porygon-z":
                 self.body = pokedex["porygonz"]
+            elif newBody[:8] == "oricorio":
+                self.body = pokedex["oricorio"]
+            elif newBody[:8] == "lycanroc":
+                if newBody[9:] == "midnight":
+                    self.body = pokedex["lycanrocmidnight"]
+                elif newBody[9:] == "dusk":
+                    self.body = pokedex["lycanrocdusk"]
+                else:
+                    self.body = pokedex["lycanroc"]
     
     def set_item(self,item_name):
         for item in all_items:
-            if item["name"] == item_name:
+            if all_items[item]["name"] == item_name:
                 self.item = item
                 break
 
@@ -119,15 +156,16 @@ class Fusion():
             else:
                 counter = 1
                 for move in all_moves:
-                    if move == self.moves[idx]:
+                    if all_moves[move]["name"] == self.moves[idx]:
                         output.append(counter)
                         break
                     counter += 1
         output.append(self.ability + 1)
+        output.append(self.hpPercent)
         if self.item is None:
             output.append(0)
         else:
-            output.append(int(self.item["num"]))
+            output.append(all_items[self.item]["num"])
         output.append(Fusion.non_volatie_to_num[self.non_volatile_status])
         return tuple(output)
     
@@ -143,8 +181,11 @@ class Fusion():
                 break
             
     def update_id(self):
-        if not(self.head is None or self.body is None):
-            self.id = int(0.5 * (self.head["num"] + self.body["num"]) * (self.head["num"] + self.body["num"] + 1) + self.body["num"])
+        if not(self.head is None):
+            if not (self.body is None):
+                self.id = int(0.5 * (self.head["num"] + self.body["num"]) * (self.head["num"] + self.body["num"] + 1) + self.body["num"])
+            else:
+                self.id = -self.head["num"]
         else:
             self.id = 0
     
@@ -166,6 +207,15 @@ class Triple_Fusion(Fusion):
     def update_info(self):
         if self.id == 0:
             raise ValueError("Triple Fusion ID not set, please set ID before updaing info")
+        elif self.id == 7118213831: #Enraicune
+            self.types = ["fire","water","electric"]
+            self.stats[constants.HITPOINTS] = 102
+            self.stats[constants.ATTACK] = 92
+            self.stats[constants.DEFENSE] = 92
+            self.stats[constants.SPECIAL_ATTACK] = 98
+            self.stats[constants.SPECIAL_DEFENSE] = 97
+            self.stats[constants.SPEED] = 100
+            self.potential_abilities = ["Inner Focus", "Pressure"]
         elif self.id == 97322323090: #Celemewchi
             self.types = ["psychic","steel","grass","typeless"]
             self.stats[constants.HITPOINTS] = 100
@@ -174,6 +224,7 @@ class Triple_Fusion(Fusion):
             self.stats[constants.SPECIAL_ATTACK] = 100
             self.stats[constants.SPECIAL_DEFENSE] = 100
             self.stats[constants.SPEED] = 100
+            self.potential_abilities = ["Synchronize","Natural Cure","Serene Grace"]
         elif self.id == 40940196257: #Regitrio
             self.types = ["ice","rock","steel","typeless"]
             self.stats[constants.HITPOINTS] = 80
@@ -182,6 +233,7 @@ class Triple_Fusion(Fusion):
             self.stats[constants.SPECIAL_ATTACK] = 100
             self.stats[constants.SPECIAL_DEFENSE] = 200
             self.stats[constants.SPEED] = 50
+            self.potential_abilities = ["Clear Body"]
         elif self.id == 914914620: #Zapmolticuno
             self.types = ["flying","ice","fire","electric"]
             self.stats[constants.HITPOINTS] = 90
@@ -190,6 +242,7 @@ class Triple_Fusion(Fusion):
             self.stats[constants.SPECIAL_ATTACK] = 125
             self.stats[constants.SPECIAL_DEFENSE] = 125
             self.stats[constants.SPEED] = 100
+            self.potential_abilities = ["Serene Grace","Pressure"]
         else:
             self.types = ["fire","water","grass","typeless"]
             if self.id == 8826753668: #Swamptiliken
@@ -199,6 +252,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 110
                 self.stats[constants.SPECIAL_DEFENSE] = 90
                 self.stats[constants.SPEED] = 120
+                self.potential_abilities = ["Unburden","Speed Boost","Damp"]
             elif self.id == 46866513956: #Torterneon
                 self.stats[constants.HITPOINTS] = 95
                 self.stats[constants.ATTACK] = 109
@@ -206,6 +260,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 111
                 self.stats[constants.SPECIAL_DEFENSE] = 101
                 self.stats[constants.SPEED] = 108
+                self.potential_abilities = ["Shell Armor","Iron Fist","Defiant"]
             elif self.id == 1238651035: #Megaligasion
                 self.stats[constants.HITPOINTS] = 85
                 self.stats[constants.ATTACK] = 105
@@ -213,6 +268,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 109
                 self.stats[constants.SPECIAL_DEFENSE] = 100
                 self.stats[constants.SPEED] = 100
+                self.potential_abilities = ["Leaf Guard","Flash Fire","Sheer Force"]
             elif self.id == 4377: #Venustoizard
                 self.stats[constants.HITPOINTS] = 80
                 self.stats[constants.ATTACK] = 84
@@ -220,6 +276,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 109
                 self.stats[constants.SPECIAL_DEFENSE] = 105
                 self.stats[constants.SPEED] = 100
+                self.potential_abilities = ["Chlorophyll","Solar Power","Rain Dish"]
             elif self.id == 1162126314: #Baylavanaw
                 self.stats[constants.HITPOINTS] = 65
                 self.stats[constants.ATTACK] = 80
@@ -227,6 +284,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 80
                 self.stats[constants.SPECIAL_DEFENSE] = 80
                 self.stats[constants.SPEED] = 80
+                self.potential_abilities = ["Leaf Guard","Flash Fire","Sheer Force"]
             elif self.id == 8691354502: #Gromarshken
                 self.stats[constants.HITPOINTS] = 70
                 self.stats[constants.ATTACK] = 85
@@ -234,6 +292,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 85
                 self.stats[constants.SPECIAL_DEFENSE] = 70
                 self.stats[constants.SPEED] = 95
+                self.potential_abilities = ["Unburden","Speed Boost","Damp"]
             elif self.id == 869: #Ivymelortle
                 self.stats[constants.HITPOINTS] = 60
                 self.stats[constants.ATTACK] = 64
@@ -241,6 +300,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 80
                 self.stats[constants.SPECIAL_DEFENSE] = 80
                 self.stats[constants.SPEED] = 80
+                self.potential_abilities = ["Chlorophyll","Solar Power","Rain Dish"]
             elif self.id == 47828451358: #Prinfernotle
                 self.stats[constants.HITPOINTS] = 75
                 self.stats[constants.ATTACK] = 89
@@ -248,6 +308,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 81
                 self.stats[constants.SPECIAL_DEFENSE] = 76
                 self.stats[constants.SPEED] = 81
+                self.potential_abilities = ["Shell Armor","Iron Fist","Defiant"]
             elif self.id == 358: #Bulbmantle
                 self.stats[constants.HITPOINTS] = 45
                 self.stats[constants.ATTACK] = 52
@@ -255,6 +316,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 65
                 self.stats[constants.SPECIAL_DEFENSE] = 65
                 self.stats[constants.SPEED] = 65
+                self.potential_abilities = ["Chlorophyll","Solar Power","Rain Dish"]
             elif self.id == 8758460028: #Torkipcko
                 self.stats[constants.HITPOINTS] = 50
                 self.stats[constants.ATTACK] = 70
@@ -262,6 +324,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 70
                 self.stats[constants.SPECIAL_DEFENSE] = 55
                 self.stats[constants.SPEED] = 70
+                self.potential_abilities = ["Unburden","Speed Boost","Damp"]
             elif self.id == 1176731483: #Totoritaquil
                 self.stats[constants.HITPOINTS] = 50
                 self.stats[constants.ATTACK] = 65
@@ -269,6 +332,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 60
                 self.stats[constants.SPECIAL_DEFENSE] = 65
                 self.stats[constants.SPEED] = 65
+                self.potential_abilities = ["Leaf Guard","Flash Fire","Sheer Force"]
             elif self.id == 45915560559: #Turcharlup
                 self.stats[constants.HITPOINTS] = 55
                 self.stats[constants.ATTACK] = 68
@@ -276,6 +340,7 @@ class Triple_Fusion(Fusion):
                 self.stats[constants.SPECIAL_ATTACK] = 61
                 self.stats[constants.SPECIAL_DEFENSE] = 56
                 self.stats[constants.SPEED] = 61
+                self.potential_abilities = ["Shell Armor","Iron Fist","Defiant"]
         
     
         
