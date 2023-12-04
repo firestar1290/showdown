@@ -1,8 +1,5 @@
 import tensorflow as tf
 import keras.api._v2.keras as ks
-import csv
-from os import listdir
-from os.path import isfile, join
 
 #labels = output, features = input
 class PlayerAgent():
@@ -13,14 +10,26 @@ class PlayerAgent():
             self.model = ks.models.load_model("models/" + model_name + ".keras")
         else:
             self.model = ks.Sequential()
-            self.model.add(ks.layers.Normalization())
             self.model.add(ks.layers.Dense(128, activation=tf.nn.relu, input_shape=PlayerAgent.inputs))
             self.model.add(ks.layers.Flatten())
             self.model.add(ks.layers.Dense(64, activation=tf.nn.relu))
             self.model.add(ks.layers.Dense(PlayerAgent.outputs, activation="linear"))
+            self.model.compile(loss = ks.losses.MeanSquaredError(),optimizer= ks.optimizers.Adam())
+            
     
     def train(self,model_name = ''):
-        base_uri = "showdown/battle_bots/cnn/data/formatted_replays/train"
+        BASE_URI = "showdown/battle_bots/cnn/data/formatted_replays/train"
+        match_csv_dataset = tf.data.experimental.make_csv_dataset(
+            BASE_URI + "/*.csv",
+            batch_size=100, #arbitrary
+            label_name="decision",
+            num_epochs=20, #arbitrary, if None then goes on forever
+            ignore_errors=True
+        )
+        if model_name != '':
+            self.model = ks.models.load_model("models/" + model_name + ".keras")
+        elif self.model == None:
+            return
         outputs = [
             "forfeit",
             "move1",
@@ -34,18 +43,11 @@ class PlayerAgent():
             "switch5",
             "switch6"
         ]
-        match_csv_dataset = tf.data.experimental.make_csv_dataset(
-            base_uri + "/*.csv",
-            batch_size=10, #arbitrary
-            label_name="match",
-            num_epochs=20, #arbitrary
-            ignore_errors=True
-        )
-        for batch, label in match_csv_dataset.take(1):
-            for key, value in batch.items():
-              print(f"{key:20s}: {value}")
-            print()
-            print(f"{'label':20s}: {label}")
+        features, labels = next(iter(match_csv_dataset.batch(5)))
+        print(features)
+        print()
+        print(labels)
+        
 
         
 if __name__ == "__main__":

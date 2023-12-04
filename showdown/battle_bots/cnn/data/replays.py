@@ -109,6 +109,9 @@ def format_curr_replay(file_name):
                     player_teams[int(line[7])-1].append(temp_fusion)
                     temp_fusion = Fusion()
             elif line[1:7] == "switch":
+                if (len(player_teams[0]) != 6 or len(player_teams[1]) != 6):
+                    print("Non-standard team size")
+                    return
                 player = int(line[9])-1
                 player_marker_idx = line.find("p" + str(player+1) + "a: ")
                 if line.find(",",player_marker_idx) > -1:
@@ -143,7 +146,7 @@ def format_curr_replay(file_name):
                 if line.find("[from]") == -1:
                     player = int(line[7])-1
                     player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                    move_name = line[line.find("|",player_marker_idx)+1:line.find("|p",player_marker_idx)]
+                    move_name = line[line.find("|",player_marker_idx)+1:line.find("|",line.find("|",player_marker_idx)+1)]
                     counter = 0
                     for move_slot_num in player_teams[player][curr_active[player]].moves:
                         player_actions["p" + str(player+1) + "_action"] = counter + 1
@@ -154,8 +157,8 @@ def format_curr_replay(file_name):
                             break
                         counter += 1
             elif line.find("|win|") > -1:
-                output_train += format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1], player_actions["p1_action"]) + "\n" + str(determine_winner(file_contents)) + "\n"
-                output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n" +  + "\n"
+                output_train += format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1], player_actions["p1_action"]) + "\n"
+                output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n" 
                 break
             elif line.find("|-damage|") > -1 or line.find("heal") > -1:
                 try:
@@ -163,7 +166,8 @@ def format_curr_replay(file_name):
                     try:
                         player_teams[player][curr_active[player]].hpPercent = int(line[line.find("|",line.find("p"))+1:line.find("\\\\")])
                     except ValueError: #death
-                        player_teams[player][curr_active[player]].hpPercent = 0
+                        if(line.find("heal") == -1):
+                            player_teams[player][curr_active[player]].hpPercent = 0
                 except ValueError:
                     pass
             elif line.find("enditem") > -1:
@@ -179,24 +183,39 @@ def format_curr_replay(file_name):
             if line.find("ability") > -1:
                 try:
                     player = int(line[line.find("p")+1]) - 1
-                    if line[line.find("ability")-1] == "-":
-                        player_marker_idx = line.find("p" + str(player+1) + "a: ")
-                        new_ability = line[line.find("|",player_marker_idx)+1:line.find("|",line.find("|",player_marker_idx)+1)]
-                    else:
-                        new_ability = line[line.find(" ",line.find("ability:"))+1:]
-                    counter = 0
-                    for poss_ability in player_teams[player][curr_active[player]].potential_abilities:
-                        if poss_ability == new_ability:
-                            player_teams[player][curr_active[player]].ability = counter
-                        counter += 1
+                    if player_teams[player][curr_active[player]].ability == -1:
+                        try:
+                            player = int(line[line.find("p")+1]) - 1
+                            new_ability = line[line.find(" ",line.find("ability:"))+1:]
+                            if "ability" in new_ability:
+                                player_marker_idx = new_ability.find("p")
+                                if new_ability.find("|",new_ability.find("|",player_marker_idx)+1) != -1:
+                                    new_ability = new_ability[new_ability.find("|",player_marker_idx) + 1:new_ability.find("|",new_ability.find("|",player_marker_idx)+1)]
+                                else:
+                                    new_ability = new_ability[new_ability.find("|",player_marker_idx) + 1:]
+                            elif new_ability.find("|") > -1:
+                                new_ability = new_ability[:new_ability.find("|")]
+                            counter = 0
+                            if new_ability not in player_teams[player][curr_active[player]].potential_abilities:
+                                player = (player+1)%2
+                            for poss_ability in player_teams[player][curr_active[player]].potential_abilities:
+                                if poss_ability == new_ability:
+                                    player_teams[player][curr_active[player]].ability = counter
+                                    break
+                                counter += 1
+                        except ValueError:
+                            pass
                 except ValueError:
                     pass
             elif line.find("item:") > -1:
                 player = int(line[line.find("p")+1]) - 1
-                item_name = line[line.find("item: ") + 6:]
+                if line.find("|",line.find("item: ") + 6) == -1:
+                    item_name = line[line.find("item: ") + 6:]
+                else:
+                    item_name = line[line.find("item: ") + 6:line.find("|",line.find("item: ") + 6)]
                 player_teams[player][curr_active[player]].set_item(item_name)
                 
-    if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv"):
+    if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/train" + file_name + ".csv"):
         print("Writing to: showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv")
         file_output_train = open("showdown/battle_bots/cnn/data/formatted_replays/train/" + file_name + ".csv",'w')
         file_output_test = open("showdown/battle_bots/cnn/data/formatted_replays/test/" + file_name + ".csv",'w')
@@ -233,7 +252,7 @@ if __name__ == "__main__":
         reader = csv.reader(replay_list,delimiter=",")
         for line in reader:
             if line[6] == "[Gen 7] IF Dex OU":
-                if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/" + line[7] + ".csv"):
+                if not os.path.isfile("showdown/battle_bots/cnn/data/formatted_replays/train" + line[7] + ".csv"):
                     request = req.urlopen(base_url + line[7] + ".html?" + str(int(datetime.now(tz=timezone.utc).timestamp() * 1000))[7:],context=ctx)
                     site_contents = str(request.read())
                     site_contents = site_contents.replace("\\n","\n")
