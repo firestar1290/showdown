@@ -36,11 +36,11 @@ class PlayerAgent():
         
         for dataframe_idx, dataframe in enumerate(dataframe_list):
             self.model.get_layer("normalization").adapt(dataframe_list[dataframe_idx])
-            history = self.model.fit(x=dataframe_list[dataframe_idx],y=label_list[dataframe_idx],verbose=2)
+            self.model.compile(loss = ks.losses.Poisson(),optimizer= ks.optimizers.Adam())
+            if not str(self.model.compute_loss(y=label_list[dataframe_idx],y_pred=np.argmax(self.model(dataframe_list[dataframe_idx]).numpy()))).isalpha():
+                self.model.fit(x=dataframe_list[dataframe_idx],y=label_list[dataframe_idx],verbose=1)
             #print(history.history["loss"][0])
-            if str(history.history["loss"][0]).isalpha():
-                file_output.write(dataframe.to_string())
-                break
+
         self.model.summary()
         #self.model.save("showdown/battle_bots/cnn/models/main_model.keras")
         
