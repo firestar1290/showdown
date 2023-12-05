@@ -1,12 +1,13 @@
-from typing import TypeAlias
+from math import nan
+import os
 import numpy as np
-import pandas
+import pandas as pd
 import tensorflow as tf
 import keras.api._v2.keras as ks
 
 #labels = output, features = input
 class PlayerAgent():
-    outputs = 4+6+1 #4 moves, 6 switches, and forfeit
+    outputs = 11 #4 moves, 6 switches, and forfeit
     inputs = (231,) #6 pokemon each (4 moves types, 1 ability, 1 item, 1 non-volatile status, 1 current hp, 4 moves, 6 base stats), 1 currently active for player 1, 1 currently active for player 2, 1 turn number
     def __init__(self,model_name : str = ''):
         if(model_name!=''):
@@ -14,90 +15,65 @@ class PlayerAgent():
         else:
             self.model = ks.Sequential()
             self.model.add(ks.layers.Input(shape=PlayerAgent.inputs))
+            self.model.add(ks.layers.Normalization())
             self.model.add(ks.layers.Dense(128, activation=tf.nn.relu))
             self.model.add(ks.layers.Flatten())
-            self.model.add(ks.layers.Dense(64, activation=tf.nn.relu),)
+            self.model.add(ks.layers.Dense(64, activation=tf.nn.relu))
             self.model.add(ks.layers.Dense(PlayerAgent.outputs, activation="softmax"))
-            self.model.compile(loss = ks.losses.CategoricalCrossentropy(),optimizer= ks.optimizers.Adam())
-            
+            self.model.compile(loss = ks.losses.Poisson(),optimizer= ks.optimizers.Adam())
     
     def train(self,model_name = ''):
         file_output = open("showdown/battle_bots/cnn/cnn_training.txt","w") #for debugging large outputs
         BASE_URI = "showdown/battle_bots/cnn/data/formatted_replays/train"
-        BATCH_SIZE = 100
-        NUM_BATCHES = 232/BATCH_SIZE
-        match_csv_dataset = tf.data.experimental.make_csv_dataset(
-            BASE_URI + "/*.csv",
-            batch_size=BATCH_SIZE, #arbitrary, number of turns per dataset
-            label_name="decision",
-            num_epochs=20, #arbitrary, if None then goes on forever
-            ignore_errors=True
-        )
-        if model_name != '':
-            self.model = ks.models.load_model("showdown/battle_bots/cnn/models/" + model_name + ".keras")
-        else:
-            try:
-                self.model = ks.models.load_model("showdown/battle_bots/cnn/models/main_model.keras")
-            except OSError:
-                pass
-
-        file_output.write(str(match_csv_dataset))
         
-        self.model.fit(x=match_csv_dataset)
-        #self.model.fit(pandas.DataFrame(match_csv_dataset))
-        #one element in the data set is an ordered dictionary containing 100 turns
-        #match_batched = match_csv_dataset.batch(NUM_BATCHES) #take number of ordered dicts, features_dict[i] = [OrderedDict,np.array([list[int]]) ; features_dict[i][0] = features, features_dict[i][1] = labels
-        #for i in range(NUM_BATCHES):
-        #    try:
-        #        features_dict = dict(list(match_batched.as_numpy_iterator())[i][0]) #dict{str : np.array(list[int])}
-        #        label_list = list(match_batched.as_numpy_iterator())[i][1] #list[list[int]]
-        #        self.model.fit(features_dict,label_list)
-        #    except tf.errors.InvalidArgumentError:
-        #        break
-        #if model_name == '':
-        #    self.model.save("showdown/battle_bots/cnn/models/main_model.keras")
-        #else:
-        #    self.model.save("showdown/battle_bots/cnn/models/" + model_name +".keras")
+        dataframe_list = []
+        label_list = []
+        for name in os.listdir(BASE_URI):
+            if (name[-4:] == ".csv"):
+                temp_frame = pd.read_csv(BASE_URI + "/" + name)
+                label_list.append(temp_frame.pop("decision"))
+                dataframe_list.append(temp_frame)
+        
+        for dataframe_idx, dataframe in enumerate(dataframe_list):
+            self.model.get_layer("normalization").adapt(dataframe_list[dataframe_idx])
+            history = self.model.fit(x=dataframe_list[dataframe_idx],y=label_list[dataframe_idx],verbose=2)
+            #print(history.history["loss"][0])
+            if str(history.history["loss"][0]).isalpha():
+                file_output.write(dataframe.to_string())
+                break
         self.model.summary()
-
+        #self.model.save("showdown/battle_bots/cnn/models/main_model.keras")
+        
     def choose_move(self,input: list[int]):
         assert(len(input) == 231)
         assert(self.model != None)
         prediction = self.model(tf.reshape(tf.convert_to_tensor(np.array(input)),shape=(1,231)))
         move_dict = {}
-        for move in range(prediction.numpy().size()):
-            move_dict[move] = prediction.numpy()[move]
+        for move in range(len(list(prediction.numpy()))):
+            move_dict[move] = list(prediction.numpy())[move]
         {k: v for k, v in sorted(move_dict.items(), key=lambda item: item[1])}
         return move_dict
     
     def test(self):
-        file_output = open("showdown/battle_bots/cnn/cnn_training.txt","a") #for debugging large outputs
-        file_output.write("Hello\n")
+        #file_output = open("showdown/battle_bots/cnn/cnn_training.txt","w") #for debugging large outputs
         BASE_URI = "showdown/battle_bots/cnn/data/formatted_replays/test"
-        BATCH_SIZE = 32
-        NUM_BATCHES = 5
-        match_csv_dataset = tf.data.experimental.make_csv_dataset(
-            BASE_URI + "/*.csv",
-            batch_size=BATCH_SIZE, #arbitrary, number of turns per dataset
-            label_name="decision",
-            num_epochs=20, #arbitrary, if None then goes on forever
-            ignore_errors=True
-        )
-        self.model.evaluate(match_csv_dataset)
-        #match_batched = match_csv_dataset.batch(NUM_BATCHES) #take number of ordered dicts, features_dict[i] = [OrderedDict,np.array([list[int]]) ; features_dict[i][0] = features, features_dict[i][1] = labels
-        #for i in range(NUM_BATCHES):
-        #    try:
-        #        features_dict = dict(list(match_batched.as_numpy_iterator())[i][0]) #dict{str : np.array(list[int])}
-        #        label_list = list(match_batched.as_numpy_iterator())[i][1] #list[list[int]]
-        #        eval_dict = self.model.evaluate(features_dict,label_list,return_dict=True)
-        #        file_output.write(str(eval_dict))
-        #        file_output.write("\nMARKER\n")
-        #    except tf.errors.InvalidArgumentError as error:
-        #        print("InvalidArg Error: ", error)
-        #        break
+        
+        dataframe_list = []
+        label_list = []
+        for name in os.listdir(BASE_URI):
+            if (name[-4:] == ".csv"):
+                temp_frame = pd.read_csv(BASE_URI + "/" + name)
+                label_list.append(temp_frame.pop("decision"))
+                dataframe_list.append(temp_frame)
+        
+        for dataframe_idx, dataframe in enumerate(dataframe_list):
+            self.model.evaluate(x=dataframe_list[dataframe_idx],y=label_list[dataframe_idx],verbose=2)
                 
         
 if __name__ == "__main__":
     agent = PlayerAgent()
+    #test_agent = PlayerAgent()
     agent.train()
     #agent.test()
+    #test_dict = agent.choose_move([7,610708,13,2,18,18,43,65,144,57,134,31,854,807,0,0,0,52,0,0,360974,17,9,18,18,93,111,85,106,120,73,0,0,0,0,0,100,0,0,162070,13,0,18,18,68,75,66,131,75,96,0,0,0,0,0,100,0,0,30331,11,10,18,18,68,65,60,103,81,103,0,0,0,0,0,100,0,0,50615,8,16,18,18,63,113,103,51,80,58,0,0,0,0,0,100,0,0,189892,0,9,18,18,131,100,105,58,98,73,767,218,0,0,6,31,272,6,5,229715,4,16,18,18,90,120,108,91,60,60,414,563,825,0,0,0,0,2,515066,8,5,18,18,86,119,70,58,75,114,391,0,0,0,0,100,0,0,708170,0,14,18,18,85,73,76,122,76,112,0,0,0,0,0,100,0,0,191125,3,9,18,18,85,93,111,98,85,96,151,825,0,0,0,100,272,6,1238651035,1,2,4,18,85,105,100,109,100,100,0,0,0,0,0,100,0,0,484234,16,16,18,18,91,96,120,84,105,46,0,0,0,0,0,100,0,0,1])
+    #print(test_dict)
