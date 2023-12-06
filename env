@@ -1,4 +1,4 @@
-BATTLE_BOT=safest
+BATTLE_BOT=cnn
 WEBSOCKET_URI=sim.pokeathlon.com:8000
 PS_USERNAME=IAmACSProject
 PS_PASSWORD=IAmACSProject

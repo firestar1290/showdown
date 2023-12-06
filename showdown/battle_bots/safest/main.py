@@ -10,5 +10,5 @@ class BattleBot(Battle):
 
     def find_best_move(self):
         battles = self.prepare_battles(join_moves_together=True)
-        safest_move = pick_safest_move_from_battles(battles)
+        safest_move = pick_safest_move_from_battles(battles)        
         return format_decision(self, safest_move)
