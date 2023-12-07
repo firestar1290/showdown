@@ -785,32 +785,30 @@ class Fusion(Pokemon):
         constants.TOXIC : 6
     }
     
+    @classmethod
+    def from_pokemon(cls,base : Pokemon):
+        if base.name != '':
+            output = Fusion(base.name)
+        else:
+            output = Fusion()
+        return output
+    
     def __init__(self,head = "aggron"):
         super().__init__(head,100)
+        super().set_likely_moves_unless_revealed()
         self.fusion_id = 0
         self.body = None
-        self.head = None
+        self.set_head(head)
         self.potential_abilities = []
         self.ability = -1
         self.item = None
-        self.base_stats = {
-            constants.HITPOINTS : 0,
-            constants.ATTACK : 0,
-            constants.DEFENSE : 0,
-            constants.SPECIAL_ATTACK : 0,
-            constants.SPECIAL_DEFENSE : 0,
-            constants.SPEED : 0
-        }
-        self.stats = calculate_stats(self.base_stats,100)
-        self.moves = []
         self.hpPercent = 100
-        self.types = [] #list instead of 2 vars cause of the triple fusions
+        self.types = [18,18,18,18] #list instead of 2 vars cause of the triple fusions (screw you Zapmolticuno)
         self.non_volatile_status = ''
-        self.is_mega = False
         
     def update_info(self): #also updates typing
         if (self.head is None):
-            raise ValueError("Set Fusion fusion_id or Head and Body before updating info")
+            raise ValueError("Set Fusion fusion_id or Head before updating info")
         self.types = []
         self.update_id()
         if not (self.body is None):
@@ -835,7 +833,7 @@ class Fusion(Pokemon):
             for ability_key in self.body["abilities"]:
                 self.potential_abilities.append(normalize_name(self.body["abilities"][ability_key]))
         else:
-            self.stats = self.head["baseStats"]
+            self.stats = copy(self.head["baseStats"])
             self.types.append(self.head["types"][0])
             try:
                 self.types.append(self.head["types"][1])
@@ -851,6 +849,7 @@ class Fusion(Pokemon):
         
     def set_head(self,newHead : str):
         self.name = normalize_name(newHead)
+        self.base_name = self.name
         self.head = pokedex[self.name]
         
 
@@ -875,14 +874,17 @@ class Fusion(Pokemon):
         output += str(self.max_hp) + ","
         for stat_name in self.stats:
             output += str(self.stats[stat_name]) + ","
-        for idx, move_name in enumerate(self.moves):
+        for idx, move_name in enumerate(self.moves[:4]):
             counter = 1
             for move in all_moves:
                 if normalize_name(all_moves[move]["name"]) == move_name.name:
                     output += str(counter) + ","
                     break
                 counter += 1
-        output += str(self.potential_abilities.index(self.ability) + 1) + ","
+        if self.ability in self.potential_abilities:
+            output += str(self.potential_abilities.index(self.ability) + 1) + ","
+        else:
+            output += "-1,"
         output += str(self.hpPercent) + ","
         if self.item is None:
             output += "0,"

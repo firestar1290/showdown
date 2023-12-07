@@ -10,20 +10,42 @@ class BattleBot(Battle):
         self.agent = cnn.PlayerAgent("main_model") #trained
         #self.agent = cnn.PlayerAgent() #untrained
         
+        self.turn_num = 0
+        
         super(BattleBot, self).__init__(*args, **kwargs)
 
     def find_best_move(self): #returns a list, but only reads list[0], see run_battle.py line 38
         agent = cnn.PlayerAgent("main_model")
-        inputs = []
-        inputs += self.user.active.as_input().split(",")
+        inputs = [self.turn_num]
+        curr_act = -1
+        if type(self.user.active) == type(Fusion()):
+            temp = self.user.active.as_input().split(",")[:-1]
+            for string_input in temp:
+                inputs += [int(string_input)]
+            curr_act = 1
         for pokemon_reserve in self.user.reserve:
-            inputs += pokemon_reserve.as_input().split(',')
-        inputs += [1]
+            if type(pokemon_reserve) != type(Fusion()):
+                pokemon_reserve = Fusion.from_pokemon(pokemon_reserve)
+                pokemon_reserve.update_info()
+            temp = pokemon_reserve.as_input().split(',')[:-1]
+            for string_input in temp:
+                inputs += [int(string_input)]
+        inputs += [curr_act]
         
-        inputs += self.opponent.active.as_input().split(",")
+        curr_act = -1
+        if type(self.opponent.active) == type(Fusion()):
+            temp = self.opponent.active.as_input().split(",")[:-1]
+            for string in temp:
+                inputs += [int(string)]
+            curr_act = 1
         for pokemon_reserve in self.opponent.reserve:
-            inputs += pokemon_reserve.as_input().split(',')
-        inputs += [1]
+            if type(pokemon_reserve) != type(Fusion()):
+                pokemon_reserve = Fusion.from_pokemon(pokemon_reserve)
+                pokemon_reserve.update_info()
+            temp = pokemon_reserve.as_input().split(',')[:-1]
+            for string in temp:
+                inputs += [int(string)]
+        inputs += [curr_act]
 
         move_choice = agent.choose_move(inputs)
         
@@ -37,4 +59,5 @@ class BattleBot(Battle):
             #use move
             move = self.user.active.moves[move_choice-1].name
         
+        self.turn_num += 1
         return format_decision(self,move)

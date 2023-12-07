@@ -46,8 +46,12 @@ class PlayerAgent():
         self.model.save("showdown/battle_bots/cnn/models/main_model.keras")
         
     def choose_move(self,input: list[int]):
-        assert(len(input) == 231)
-        assert(self.model != None)
+        try:
+            assert(len(input) == 231)
+            assert(self.model != None)
+        except AssertionError:
+            print("Input length: " + str(len(input)) + "\nModel is None: " + str(self.model == None))
+            raise ValueError("Invalid model or input length")
         prediction = self.model(tf.reshape(tf.convert_to_tensor(np.array(input)),shape=(1,231)))
         move_dict = {}
         for move in range(len(list(prediction.numpy())[0])):
