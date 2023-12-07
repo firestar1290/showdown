@@ -17,12 +17,12 @@ class PlayerAgent():
                 self.model = ks.Sequential()
                 self.model.add(ks.layers.Input(shape=PlayerAgent.inputs))
                 #self.model.add(ks.layers.Normalization(name="normal"))
-                self.model.add(ks.layers.Dense(128, activation=tf.nn.relu))
+                self.model.add(ks.layers.Dense(128, activation=tf.nn.swish))
                 self.model.add(ks.layers.Flatten())
-                self.model.add(ks.layers.Dense(64, activation=tf.nn.relu))
-                self.model.add(ks.layers.Dense(PlayerAgent.outputs, activation="softmax"))
+                self.model.add(ks.layers.Dense(64, activation=tf.nn.swish))
+                self.model.add(ks.layers.Dense(PlayerAgent.outputs, activation="linear"))
+                self.model.compile(loss = ks.losses.LogCosh(),optimizer= ks.optimizers.Adam())
                 self.model.save("showdown/battle_bots/cnn/models/"+model_name+".keras")
-                self.model.compile(loss = ks.losses.CategoricalHinge(),optimizer= ks.optimizers.Adam())
         else:
             self.model = ks.Sequential()
             self.model.add(ks.layers.Input(shape=PlayerAgent.inputs))
@@ -102,7 +102,7 @@ class PlayerAgent():
                 
         
 if __name__ == "__main__":
-    model_num = 4
+    model_num = 1
     model_name = "base_model_"+str(model_num)
     agent = PlayerAgent(model_name)
     #test_agent = PlayerAgent()
@@ -126,9 +126,45 @@ if __name__ == "__main__":
     #test_agent = PlayerAgent()
     agent.train(model_name,1000)
     agent.test()
+    
+    model_name = "model_"+str(model_num)+"_1250"
+    agent = PlayerAgent(model_name)
+    #test_agent = PlayerAgent()
+    agent.train(model_name,1250)
+    agent.test()
+    
+    model_name = "model_"+str(model_num)+"_1500"
+    agent = PlayerAgent(model_name)
+    #test_agent = PlayerAgent()
+    agent.train(model_name,1500)
+    agent.test()
+    
+    model_name = "model_"+str(model_num)+"_1750"
+    agent = PlayerAgent(model_name)
+    #test_agent = PlayerAgent()
+    agent.train(model_name,1750)
+    agent.test()
 
     model_name = "model_"+str(model_num)+"_2000"
     agent = PlayerAgent(model_name)
     #test_agent = PlayerAgent()
     agent.train(model_name,2000)
+    agent.test()
+    
+    model_name = "model_"+str(model_num)+"_3000"
+    agent = PlayerAgent(model_name)
+    #test_agent = PlayerAgent()
+    agent.train(model_name,3000)
+    agent.test()
+    
+    model_name = "model_"+str(model_num)+"_4000"
+    agent = PlayerAgent(model_name)
+    #test_agent = PlayerAgent()
+    agent.train(model_name,4000)
+    agent.test()
+    
+    model_name = "model_"+str(model_num)+"_5000"
+    agent = PlayerAgent(model_name)
+    #test_agent = PlayerAgent()
+    agent.train(model_name,5000)
     agent.test()

@@ -6,10 +6,10 @@ from ..helpers import format_decision
 
 class BattleBot(Battle):
     def __init__(self, *args, **kwargs):
-        model_num = 4
-        model_size = 2000
+        model_num = 1
+        model_size = 1000
         self.agent = cnn.PlayerAgent("model_"+str(model_num)+"_" + str(model_size)) #trained
-        #self.agent = cnn.PlayerAgent() #untrained
+        #self.agent = cnn.PlayerAgent("base_model_" + str(model_num)) #base trained
         
         self.turn_num = 0
         
