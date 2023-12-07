@@ -10,3 +10,4 @@ suspect_decisions.py
 teams/teams
 *.csv
 showdown/battle_bots/cnn/data/unformatted_replay.html
+*.keras

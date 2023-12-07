@@ -499,6 +499,7 @@ class Pokemon:
         self.can_mega_evo = False
         self.can_ultra_burst = False
         self.can_dynamax = False
+        self.can_terastallize = False
         self.is_mega = False
         self.can_have_assaultvest = True
         self.can_have_choice_item = True
@@ -551,6 +552,11 @@ class Pokemon:
             pkmn = Fusion()
             pkmn.set_head(name)
             pkmn.set_body((details[-1])[details[-1].find(' ',2)+1:])
+            pkmn.update_info()
+        elif "fusion" in details[-2]: #if fusion has alt sprite, details[-1] is the alt sprite
+            pkmn = Fusion()
+            pkmn.set_head(name)
+            pkmn.set_body((details[-2])[details[-2].find(' ',2)+1:])
             pkmn.update_info()
         else:
             pkmn = Pokemon(name, level)
@@ -802,6 +808,7 @@ class Fusion(Pokemon):
         self.potential_abilities = []
         self.ability = -1
         self.item = None
+        self.types += ["typeless","typeless"]
         self.hpPercent = 100
         self.types = [18,18,18,18] #list instead of 2 vars cause of the triple fusions (screw you Zapmolticuno)
         self.non_volatile_status = ''
@@ -868,9 +875,9 @@ class Fusion(Pokemon):
                 self.non_volatile_status = non_vol
 
     def as_input(self): #if fusion_id not set, set with Cantor pairing function
-        output = str(self.fusion_id) + ","
+        output = str(self.fusion_id/25000) + ","
         for type in self.types:
-            output += str(pokemon_type_indicies[type]) + ","
+            output += str(pokemon_type_indicies[normalize_name(type)]) + ","
         output += str(self.max_hp) + ","
         for stat_name in self.stats:
             output += str(self.stats[stat_name]) + ","

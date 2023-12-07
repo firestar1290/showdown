@@ -6,8 +6,9 @@ from ..helpers import format_decision
 
 class BattleBot(Battle):
     def __init__(self, *args, **kwargs):
-        
-        self.agent = cnn.PlayerAgent("main_model") #trained
+        model_num = 4
+        model_size = 2000
+        self.agent = cnn.PlayerAgent("model_"+str(model_num)+"_" + str(model_size)) #trained
         #self.agent = cnn.PlayerAgent() #untrained
         
         self.turn_num = 0
@@ -15,13 +16,12 @@ class BattleBot(Battle):
         super(BattleBot, self).__init__(*args, **kwargs)
 
     def find_best_move(self): #returns a list, but only reads list[0], see run_battle.py line 38
-        agent = cnn.PlayerAgent("main_model")
-        inputs = [self.turn_num]
+        inputs = [self.turn_num] #len(inputs) = 1
         curr_act = -1
         if type(self.user.active) == type(Fusion()):
             temp = self.user.active.as_input().split(",")[:-1]
             for string_input in temp:
-                inputs += [int(string_input)]
+                inputs += [float(string_input)]
             curr_act = 1
         for pokemon_reserve in self.user.reserve:
             if type(pokemon_reserve) != type(Fusion()):
@@ -29,14 +29,14 @@ class BattleBot(Battle):
                 pokemon_reserve.update_info()
             temp = pokemon_reserve.as_input().split(',')[:-1]
             for string_input in temp:
-                inputs += [int(string_input)]
+                inputs += [float(string_input)]
         inputs += [curr_act]
-        
+        #len(inputs) = 116
         curr_act = -1
         if type(self.opponent.active) == type(Fusion()):
             temp = self.opponent.active.as_input().split(",")[:-1]
             for string in temp:
-                inputs += [int(string)]
+                inputs += [float(string)]
             curr_act = 1
         for pokemon_reserve in self.opponent.reserve:
             if type(pokemon_reserve) != type(Fusion()):
@@ -44,11 +44,11 @@ class BattleBot(Battle):
                 pokemon_reserve.update_info()
             temp = pokemon_reserve.as_input().split(',')[:-1]
             for string in temp:
-                inputs += [int(string)]
+                inputs += [float(string)]
         inputs += [curr_act]
+        #len(inputs) = 231
+        move_choice = self.agent.choose_move(inputs)
 
-        move_choice = agent.choose_move(inputs)
-        
         if move_choice > 4:
             #switch
             if move_choice == 10:
@@ -57,7 +57,12 @@ class BattleBot(Battle):
                 move = "switch " + self.user.reserve[move_choice-5].name
         else:
             #use move
-            move = self.user.active.moves[move_choice-1].name
-        
+            try:
+                move = self.user.active.moves[move_choice-1].name
+            except IndexError:
+                move = "switch " + self.user.reserve[move_choice-1].name
+    
         self.turn_num += 1
-        return format_decision(self,move)
+        decision = format_decision(self,move)
+        print(str(move_choice) + " : " + str(self.turn_num))
+        return decision

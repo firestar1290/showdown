@@ -7,5 +7,5 @@ POKEMON_MODE=gen7ifdexou
 RUN_COUNT=1
 
 TEAM_NAME=gen8/ou/clef_sand
-SAVE_REPLAY=True
+SAVE_REPLAY=False
 LOG_LEVEL=DEBUG

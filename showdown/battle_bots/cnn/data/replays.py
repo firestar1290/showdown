@@ -7,7 +7,7 @@ from sys import path
 
 path.append("")
 
-from showdown.battle_bots.cnn.fusion import Fusion, Triple_Fusion
+from showdown.battle import Fusion, Triple_Fusion
 from showdown.engine.objects import Pokemon
 
 #from engine.damage_calculator import pokemon_type_indicies
@@ -128,12 +128,13 @@ def format_curr_replay(file_name):
                     else:
                         temp_body = line[line.find("fusion: ")+8:line.find(",",line.find("fusion: "))]
                     temp_fusion = Fusion()
-                    temp_fusion.set_body(temp_body.lower())
+                    if "fusion" in line:
+                        temp_fusion.set_body(temp_body.lower())
                     temp_fusion.set_head(temp_head.lower())
                     temp_fusion.update_info()
                 counter = 0
                 for pokemon in player_teams[player]:
-                    if pokemon.id == temp_fusion.id:
+                    if pokemon.fusion_id == temp_fusion.fusion_id:
                         curr_active[player] = counter
                         player_actions["p" + str(player+1) + "_action"] = counter + 4 + 1 #I have no idea why this +1 is necessary, but it is
                         break
@@ -148,12 +149,12 @@ def format_curr_replay(file_name):
                     player_marker_idx = line.find("p" + str(player+1) + "a: ")
                     move_name = line[line.find("|",player_marker_idx)+1:line.find("|",line.find("|",player_marker_idx)+1)]
                     counter = 0
-                    for move_slot_num in player_teams[player][curr_active[player]].moves:
+                    for move_slot_num, move in enumerate(player_teams[player][curr_active[player]].moves):
                         player_actions["p" + str(player+1) + "_action"] = counter + 1
-                        if player_teams[player][curr_active[player]].moves[move_slot_num] == '':
+                        if player_teams[player][curr_active[player]].moves[move_slot_num].name == '':
                             player_teams[player][curr_active[player]].moves[move_slot_num] = move_name
                             break
-                        elif player_teams[player][curr_active[player]].moves[move_slot_num] == move_name:
+                        elif player_teams[player][curr_active[player]].moves[move_slot_num].name == move_name:
                             break
                         counter += 1
             elif line.find("|win|") > -1:
