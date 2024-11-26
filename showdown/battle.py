@@ -801,7 +801,7 @@ class Fusion(Pokemon):
     
     def __init__(self,head = "aggron"):
         super().__init__(head,100)
-        super().set_likely_moves_unless_revealed()
+        #super().set_likely_moves_unless_revealed()
         self.fusion_id = 0
         self.body = None
         self.set_head(head)

@@ -6250,7 +6250,7 @@
         "target": "normal",
         "type": "ghost"
     },
-    "hiddenpower": {
+    "hiddenpower60": {
         "accuracy": 100,
         "basePower": 60,
         "category": "special",

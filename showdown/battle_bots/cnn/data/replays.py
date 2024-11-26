@@ -7,7 +7,8 @@ from sys import path
 
 path.append("")
 
-from showdown.battle import Fusion, Triple_Fusion
+from showdown.engine.helpers import normalize_name
+from showdown.battle import Fusion, Move, Triple_Fusion
 from showdown.engine.objects import Pokemon
 
 #from engine.damage_calculator import pokemon_type_indicies
@@ -151,12 +152,11 @@ def format_curr_replay(file_name):
                     counter = 0
                     for move_slot_num, move in enumerate(player_teams[player][curr_active[player]].moves):
                         player_actions["p" + str(player+1) + "_action"] = counter + 1
-                        if player_teams[player][curr_active[player]].moves[move_slot_num].name == '':
-                            player_teams[player][curr_active[player]].moves[move_slot_num] = move_name
-                            break
-                        elif player_teams[player][curr_active[player]].moves[move_slot_num].name == move_name:
+                        if move.name == normalize_name(move_name):
                             break
                         counter += 1
+                    if counter == len(player_teams[player][curr_active[player]].moves):
+                        player_teams[player][curr_active[player]].moves.append(Move(normalize_name(move_name)))
             elif line.find("|win|") > -1:
                 output_train += format_input(player_teams[0],player_teams[1],turn_num,curr_active[0],curr_active[1], player_actions["p1_action"]) + "\n"
                 output_test += format_input(player_teams[1],player_teams[0],turn_num,curr_active[1],curr_active[0], player_actions["p2_action"]) + "\n" 
