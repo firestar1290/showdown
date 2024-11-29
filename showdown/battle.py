@@ -888,6 +888,8 @@ class Fusion(Pokemon):
                     output += str(counter) + ","
                     break
                 counter += 1
+        for i in range(4 - len(self.moves)):
+            output += "-1,"
         if self.ability in self.potential_abilities:
             output += str(self.potential_abilities.index(self.ability) + 1) + ","
         else:
