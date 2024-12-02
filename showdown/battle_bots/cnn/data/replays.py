@@ -13,6 +13,18 @@ from showdown.engine.objects import Pokemon
 
 #from engine.damage_calculator import pokemon_type_indicies
 
+def determine_elo(battle_log: str) -> list[int]:
+    output = []
+    for line in battle_log.splitlines():
+        if(line.find("|player|") != -1):
+            if(line[line.rfind("|")+1:] != "" or line[line.rfind("|")+1:] != ''):
+                output.append(line[line.rfind("|")+1:])
+            else:
+                output.append(1000)
+        if len(output) == 2:
+            break
+    return output
+
 def format_input(p1_team : list[Fusion], p2_team : list[Fusion], turn_num : int, p1_active : int, p2_active : int, p1_action : int):
     output = str(turn_num) + ","
     counter = 0
@@ -61,6 +73,7 @@ def format_curr_replay(file_name):
     }
     print("Formatting: " + file_name)
     file_contents = ""
+    file_header = ""
     output_train = ''
     output_test = ''
     player_actions = {"p1_action" : -1, "p2_action" : -1} #0 = forfeit, 1 = move1, 2 = move2, 3 = move3, 4 = move4, 5 = switch1, 6 = switch2, 7 = switch3, 8 = switch4, 9 = switch5, 10 = switch6
@@ -75,6 +88,8 @@ def format_curr_replay(file_name):
                 if line == "</script>\n":
                     break
                 file_contents += line + "\n"
+            else:
+                file_header += line + "\n"
             line_counter += 1
             
         if file_contents.find("start") == -1:
@@ -238,8 +253,9 @@ def format_curr_replay(file_name):
         file_output_test.write("p2_curr_active,decision\n")
         file_output_train.write(output_train)
         file_output_test.write(output_test)
-        file_output_winners_train.write(file_name + " : " + str(determine_winner(file_contents)) + "\n")
-        file_output_winners_test.write(file_name + " : " + str((determine_winner(file_contents)%2)+1) + "\n")
+        elos = determine_elo(file_header)
+        file_output_winners_train.write(file_name + " [" + str(elos[0]) + "," + str(elos[1]) + "] : " + str(determine_winner(file_contents)) + "\n")
+        file_output_winners_test.write(file_name + " [" + str(elos[1]) + "," + str(elos[0]) + "] : " + str((determine_winner(file_contents)%2)+1) + "\n")
     else:
         print("showdown/battle_bots/cnn/data/formatted_replays/" + file_name + ".csv already exists")
 
